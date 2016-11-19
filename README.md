@@ -1,7 +1,7 @@
 # roskilde_festival_band_scraper
 Scraper for Roskilde Festival webpage (www.roskilde-festival.dk).  Scraping the band-info about the announced bands a specific year
 
-~~Sorry for danish word in the code! I will fixed that soon! ~~
+~~ Sorry for danish word in the code! I will fixed that soon! ~~
 I have translated the most important thing. The rest will come. 
 And in some time I will write some documentation at how to use it. 
 
@@ -27,7 +27,7 @@ My ultimative goal is to make an Python install so it will install all dependenc
 
 ## Issues and to-do
 - Argument to choose to save bands in database or a file
-- Arguments for in to the database (to save bands in db)
+- Arguments for when to save to the database (host, password etc.)
 - Autodetect if a year is upcomming or old
 - Scraping old years
 
