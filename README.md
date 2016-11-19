@@ -1,7 +1,7 @@
 # roskilde_festival_band_scraper
 Scraper for Roskilde Festival webpage (www.roskilde-festival.dk).  Scraping the band-info about the announced bands a specific year
 
-~~ Sorry for danish word in the code! I will fixed that soon! ~~
+~~Sorry for danish word in the code! I will fixed that soon!~~
 I have translated the most important thing. The rest will come. 
 And in some time I will write some documentation at how to use it. 
 
