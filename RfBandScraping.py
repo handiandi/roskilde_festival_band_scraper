@@ -83,7 +83,7 @@ class RfBandScraping:
 
     def load_page(self):
         self.browser.get(
-            "http://www.roskilde-festival.dk/music/"+str(self.current_year))
+            "http://www.roskilde-festival.dk/music/" + str(self.current_year))
         self.browser.save_screenshot('start_page.png')
         music_link = None
         try:
@@ -96,7 +96,7 @@ class RfBandScraping:
 
     def get_music_as_list(self):
         self.browser.get(
-            "http://www.roskilde-festival.dk/music/"+str(self.current_year))
+            "http://www.roskilde-festival.dk/music/" + str(self.current_year))
         link = None
         try:
             link = self.browser.find_element(
@@ -110,7 +110,7 @@ class RfBandScraping:
         except Exception as e:
             print("Couldn't click on the link to the band list: {0}".format(e))
         sleep(3)
-       
+
         band_list = None
         try:
             band_list = self.browser.find_element(
@@ -177,17 +177,19 @@ class RfBandScraping:
                             spans = play_info_div.find_elements(
                                 By.CSS_SELECTOR, 'span')
                             play_info = spans[0].text
-                            stage = play_info[play_info.rfind(" ")+1:]
-                            play_info = play_info[:play_info.rfind(" ")-1]
+                            stage = play_info[play_info.rfind(" ") + 1:]
+                            play_info = play_info[:play_info.rfind(" ") - 1]
                             year = play_info[-4:]
                             play_info = play_info[:-6]
                             stage = stage.title()
                             spilletime = (play_info[: -6] + " " + year +
-                                         " " + play_info[-5:]).title()
+                                          " " + play_info[-5:]).title()
                             self.bands[band.text]['stage'] = stage
-                            self.bands[band.text]['time'] = parse(spilletime, fuzzy=True)
+                            self.bands[band.text]['time'] = parse(
+                                spilletime, fuzzy=True)
                         except Exception:
-                            print("Couldn't find the 'spans' in play_info_div (no info about which stage and time the band will play, is released yet)")
+                            print(
+                                "Couldn't find the 'spans' in play_info_div (no info about which stage and time the band will play, is released yet)")
                             self.bands[band.text]['stage'] = None
                             self.bands[band.text]['time'] = None
                     except Exception:
@@ -209,7 +211,7 @@ class RfBandScraping:
     def get_category(self):
         print("get_category")
         self.browser.get(
-            "http://www.roskilde-festival.dk/music/"+str(self.current_year))
+            "http://www.roskilde-festival.dk/music/" + str(self.current_year))
         sleep(2)
         poster_link = None
         try:
@@ -299,10 +301,10 @@ class RfBandScraping:
 
         pprint.pprint(self.bands)
 
-
     """
     An experimentel methods
     """
+
     def spilletime_leg(self):
         d = defaultdict(list)
         dd = defaultdict(dict)
@@ -320,7 +322,7 @@ class RfBandScraping:
                 print(lst)
             for i, tup in enumerate(lst, start=1):
                 if i < len(lst):
-                    hours_between = (lst[i][1]-tup[1]).seconds/60/60
+                    hours_between = (lst[i][1] - tup[1]).seconds / 60 / 60
                     if stage == "Street":
                         print(hours_between)
                     if hours_between < 6.0:
@@ -339,14 +341,15 @@ class RfBandScraping:
                             temp_dag = str(int(temp_dag) + 1)
                             print("stage = {} - band = {}\n    time = {}\n----------\n".
                                   format(stage, tup[0], tup[1]))
-                            #print("i = {} - stage = {} - band = {}\n    time = {}\n    hb = {}\n----------\n".
-                            #      format(i, stage, lst[i][0], lst[i][1], hours_between))
+                            # print("i = {} - stage = {} - band = {}\n    time = {}\n    hb = {}\n----------\n".
+                            # format(i, stage, lst[i][0], lst[i][1],
+                            # hours_between))
                         else:
                             temp_dag = str(int(temp_dag) + 1)
                             dd[stage][temp_dag] = [tup]
                 else:
-                    #if len(lst) == 1:
-                    hours_between = (tup[1]-lst[i-2][1]).seconds/60/60
+                    # if len(lst) == 1:
+                    hours_between = (tup[1] - lst[i - 2][1]).seconds / 60 / 60
                     if hours_between < 6.0:
                         if int(temp_dag) == -1:
                             temp_dag = tup[1].strftime("%w")
@@ -363,19 +366,20 @@ class RfBandScraping:
                             temp_dag = str(int(temp_dag) + 1)
                             print("stage = {} - band = {}\n    time = {}\n----------\n".
                                   format(stage, tup[0], tup[1]))
-                            #print("i = {} - stage = {} - band = {}\n    time = {}\n    hb = {}\n----------\n".
-                            #      format(i, stage, lst[i][0], lst[i][1], hours_between))
+                            # print("i = {} - stage = {} - band = {}\n    time = {}\n    hb = {}\n----------\n".
+                            # format(i, stage, lst[i][0], lst[i][1],
+                            # hours_between))
                         else:
                             temp_dag = str(int(temp_dag) + 1)
                             dd[stage][temp_dag].append(tup)
 
-        #[('BABY BLOOD', datetime.datetime(2016, 6, 26, 20, 0), 0.0), 
-        # ('M.I.L.K.',   datetime.datetime(2016, 6, 27, 20, 0), 0.0), 
+        #[('BABY BLOOD', datetime.datetime(2016, 6, 26, 20, 0), 0.0),
+        # ('M.I.L.K.',   datetime.datetime(2016, 6, 27, 20, 0), 0.0),
         # ('KHALAZER',   datetime.datetime(2016, 6, 28, 20, 0), 0.0)]
         #
-        #print("\n\n\n\n----------------\n\n\n")
+        # print("\n\n\n\n----------------\n\n\n")
         pprint.pprint(dd)
-        #print(dd['Orange'][3])
+        # print(dd['Orange'][3])
         for stage, dag_key in dd.items():
             for dag, lst in dag_key.items():
                 s = 0.0
@@ -383,19 +387,20 @@ class RfBandScraping:
                     band, time, _ = tup
                     if i < len(lst):
                         time2 = lst[i][1]
-                        dur_minutes = ((time2-time).seconds/60)-30 #30 til stage-skift
+                        # 30 til stage-skift
+                        dur_minutes = ((time2 - time).seconds / 60) - 30
                         s += dur_minutes
-                        d[stage] = self.updates_time_in_tuple(dur_minutes, band, d[stage])
+                        d[stage] = self.updates_time_in_tuple(
+                            dur_minutes, band, d[stage])
                     else:
-                        mean = s/len(lst)
-                        d[stage] = self.updates_time_in_tuple(mean, band, d[stage])
+                        mean = s / len(lst)
+                        d[stage] = self.updates_time_in_tuple(
+                            mean, band, d[stage])
 
         pprint.pprint(d)
 
-
     def updates_time_in_tuple(self, value, band, lst_of_tuples):
         return [(b, t, d) if b != band else (b, t, value) for (b, t, d) in lst_of_tuples]
-
 
     def get_categories(self):
         return self.categories
@@ -413,9 +418,13 @@ class DatabaseHelper(object):
         self.current_year = now.year
         with open("db_info.txt", 'r') as f:
             login_info = f.readlines()
-        login_info_dict = dict(line.strip().split("=") for line in login_info if not line.startswith("#"))
-        self.db = MySQLdb.connect(host=login_info_dict["host"], user=login_info_dict["user"],
-                                  passwd=login_info_dict["password"], db=login_info_dict["db"], port=login_info_dict["port"],
+        login_info_dict = dict(line.strip().split("=")
+                               for line in login_info if not line.startswith("#"))
+        self.db = MySQLdb.connect(host=login_info_dict["host"],
+                                  user=login_info_dict["user"],
+                                  passwd=login_info_dict["password"],
+                                  db=login_info_dict["db"],
+                                  port=login_info_dict["port"],
                                   charset='utf8')
         self.current_bands = self.fetch_current_bands()
 
@@ -463,7 +472,8 @@ class DatabaseHelper(object):
                 new_bands.append(band)
             i += 1
         if sql_insert:
-            print("Number of new bands: {}\n--------------".format(len(new_bands)))
+            print(
+                "Number of new bands: {}\n--------------".format(len(new_bands)))
             # print(new_bands)
             # print(sql_insert)
 
@@ -527,23 +537,22 @@ class DatabaseHelper(object):
 if __name__ == '__main__':
     now = datetime.datetime.now()
     year = now.year
-    if len(sys.argv) ==  2:
+    if len(sys.argv) == 2:
         year = sys.argv[1]
     rfbs = RfBandScraping(year)
     #d = DatabaseHelper()
-    #d.insert_update_categories(rfbs.categories)
-    
+    # d.insert_update_categories(rfbs.categories)
+
     rfbs.get_music_as_list()
     rfbs.extract_bands()
-    
-    #rfbs.spilletime_leg()
+
+    # rfbs.spilletime_leg()
     rfbs.get_category()
 
-
-    #d.insert_update_bands(rfbs.bands)
+    # d.insert_update_bands(rfbs.bands)
     #res = d.fetch_current_bands()
-    #pprint.pprint(res)
-    #pprint.pprint(rfbs.bands)
+    # pprint.pprint(res)
+    # pprint.pprint(rfbs.bands)
 
 """
 TODO:
