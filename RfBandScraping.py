@@ -205,6 +205,9 @@ class RfBandScraping:
         print("Number of bands: {}".format(len(self.bands)))
         pprint.pprint(self.bands)
 
+    def detectYear(self):
+        pass
+
     def get_spilleplan(self):
         pass
 
@@ -300,6 +303,7 @@ class RfBandScraping:
                 print("Couldn't find band name in small_names")
 
         pprint.pprint(self.bands)
+        print("Number of bands: {}".format(len(self.bands)))
 
     """
     An experimentel methods
