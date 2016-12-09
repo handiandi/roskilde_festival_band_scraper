@@ -22,10 +22,10 @@ class RfBandScraping:
 
     """docstring for PeopleUpdater"""
 
-    def __init__(self, year):
-        print("Selenium webdriver Version: %s" % (webdriver.__version__))
-        self.current_year = year
+    def __init__(self, year=None):
+        #print("Selenium webdriver Version: %s" % (webdriver.__version__))
         self.browser = self.init_driver()
+        self.current_year = year if year else self.detectYear()
         self.bands = defaultdict(dict)
         self.band_list = None
         self.page_info = defaultdict(dict)
@@ -206,7 +206,22 @@ class RfBandScraping:
         pprint.pprint(self.bands)
 
     def detectYear(self):
-        pass
+        """ Get the working year at Roskilde Festival
+
+        Getting the working year at Roskilde Festival,
+        by extracting the year from the logo
+
+        Returns:
+            integer -- The working year
+        """
+        year = 0
+        year_xpath = '//*[@id="ng-app"]/body/div[2]/nav/div[1]/header/a/figure/small'
+        self.browser.get("http://www.roskilde-festival.dk")
+        try:
+            year = self.browser.find_element(By.XPATH, year_xpath)
+        except Exception as e:
+            print("detectYear - Something went wrong")
+        return year.text
 
     def get_spilleplan(self):
         pass
@@ -540,18 +555,19 @@ class DatabaseHelper(object):
 
 if __name__ == '__main__':
     now = datetime.datetime.now()
-    year = now.year
+    year = None #now.year
     if len(sys.argv) == 2:
         year = sys.argv[1]
     rfbs = RfBandScraping(year)
+    rfbs.detectYear()
     #d = DatabaseHelper()
     # d.insert_update_categories(rfbs.categories)
 
-    rfbs.get_music_as_list()
-    rfbs.extract_bands()
+    #rfbs.get_music_as_list()
+    #rfbs.extract_bands()
 
     # rfbs.spilletime_leg()
-    rfbs.get_category()
+    #rfbs.get_category()
 
     # d.insert_update_bands(rfbs.bands)
     #res = d.fetch_current_bands()
