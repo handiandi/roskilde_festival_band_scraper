@@ -18,6 +18,7 @@ As in december 2016, it will use 2017 as the current year:
 ./RfBandScraping.py
 ```
 The result of the above (should be) the band names for the upcomming year 2017.
+
 If you want to scrape old years, you have to give the year explicit, like this:
 ```bash
 ./RfBandScraping.py 2016
