@@ -4,29 +4,39 @@ Scraper for Roskilde Festival webpage (www.roskilde-festival.dk).  Scraping the 
 I have translated the most important thing from danish to english. The rest will come. 
 And in some time I will write some documentation at how to use it. 
 
-## Quick-guide for use: 
-It will use the current year as default, but the Roskilde Festival has already begun (as of november 2016) to release bands for the upcomming year (2017). 
-So it will fail if you just run the script now (in 2016), because Roskilde Festival is already in 2017. 
-Therefore the script takes an argument which is the the year, as so:
-```bash
-./RfBandScraping.py 2017
-```
+## Installation
+1. Clone/download the files from the repository
+2. Download and install PhantomJS version **2.1.1** (or higher) by following [this guide](https://gist.github.com/julionc/7476620). **Remember to install 2.1.1 (or higher) and not 1.9.8!**
+3. Install Pipy packages: `pip3 install -r requirements.txt`
+4. Done! :)
 
-The result of the above (should be) the band names for the upcomming year 2017. 
+
+## Quick-guide for use: 
+It will find and use the year that Roskilde Festival current uses. 
+As in december 2016, it will use 2017 as the current year:
+```bash
+./RfBandScraping.py
+```
+The result of the above (should be) the band names for the upcomming year 2017.
+If you want to scrape old years, you have to give the year explicit, like this:
+```bash
+./RfBandScraping.py 2016
+```
+**OBS: Scraping old years, isn't yet implemented!**
 
 ## Dependencies
+### Pipy packages 
 - Selenium
-- PhantomJS
 - tqdm
 - dateutil
-- MySQLdb (for now)
+- pymysql
 
-My ultimative goal is to make an Python install so it will install all dependencies automatically
+### Other tools/dependencies
+- PhantomJS>=2.1.1
 
 
 ## Issues and to-do
 - Argument to choose to save bands in database or a file
 - Arguments for when to save to the database (host, password etc.)
-- Autodetect if a year is upcomming or old
 - Scraping old years
 
