@@ -1,0 +1,4 @@
+PyMySQL>=0.7.9
+python-dateutil>=2.6.0
+selenium>=3.0.2
+tqdm>=4.10.0
