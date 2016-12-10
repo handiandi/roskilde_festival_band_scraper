@@ -9,12 +9,11 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from collections import defaultdict
 import pprint
-import MySQLdb
+import pymysql.cursors
 import datetime
 from tqdm import tqdm
 from dateutil.parser import parse
-from chardet.universaldetector import UniversalDetector
-
+#from chardet.universaldetector import UniversalDetector
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 
@@ -439,7 +438,7 @@ class DatabaseHelper(object):
             login_info = f.readlines()
         login_info_dict = dict(line.strip().split("=")
                                for line in login_info if not line.startswith("#"))
-        self.db = MySQLdb.connect(host=login_info_dict["host"],
+        self.db = pymysql.connect(host=login_info_dict["host"],
                                   user=login_info_dict["user"],
                                   passwd=login_info_dict["password"],
                                   db=login_info_dict["db"],
