@@ -16,6 +16,9 @@ from dateutil.parser import parse
 #from chardet.universaldetector import UniversalDetector
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
+from argparse import ArgumentParser
+from argparse import RawTextHelpFormatter
+
 
 class RfBandScraping:
 
@@ -554,19 +557,51 @@ class DatabaseHelper(object):
 
 if __name__ == '__main__':
     now = datetime.datetime.now()
-    year = None #now.year
+    year = None  # now.year
     if len(sys.argv) == 2:
         year = sys.argv[1]
-    rfbs = RfBandScraping(year)
-    rfbs.detectYear()
+
+    dbinfo_help_text = """Used only with -o="database"\n
+File with database and login-informations:
+Login-informations as following on a seperate line:
+username=[username-value]
+port=[port], ect.\n
+Database-information:
+On each line:
+database=[database_name]
+table=[table_name] - followed by:
+col=[column_name]-->[mapped_key]\n
+mapped_key could be band_name. For example:
+col=name-->band_name\n
+Possible mapped_keys:
+band_name, stage, concert_start_time, category, concert_length\n
+There can be multiple instance of table and col.
+cols must be grouped under the correct table"""
+    arg_parser = ArgumentParser(description='Bla bla bla',
+                                formatter_class=RawTextHelpFormatter)
+    arg_parser.add_argument("-y", "--year", dest="year", metavar="INTEGER",
+                            help="Scrape specific year")
+    arg_parser.add_argument("-o", "--output", dest="output",
+                            choices=["file", "stdout", "database"],
+                            help="Choose how to output the scraped data")
+    arg_parser.add_argument("-dbinfo", "--database_info", metavar="FILE",
+                            dest="dbinfo", help=dbinfo_help_text)
+
+    args = arg_parser.parse_args()
+    if args.output == "database" and args.dbinfo is None:
+        arg_parser.error("Missing database information file")
+    print(args.year)
+    #rfbs = RfBandScraping(year)
+    # rfbs.detectYear()
+
     #d = DatabaseHelper()
     # d.insert_update_categories(rfbs.categories)
 
-    #rfbs.get_music_as_list()
-    #rfbs.extract_bands()
+    # rfbs.get_music_as_list()
+    # rfbs.extract_bands()
 
     # rfbs.spilletime_leg()
-    #rfbs.get_category()
+    # rfbs.get_category()
 
     # d.insert_update_bands(rfbs.bands)
     #res = d.fetch_current_bands()
