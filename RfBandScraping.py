@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
+
 import sys
+# sys.setdefaultencoding('utf8')
 from time import sleep
 import re
 from selenium import webdriver
@@ -9,7 +11,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from collections import defaultdict
 import pprint
-import pymysql.cursors
 import datetime
 from tqdm import tqdm
 from dateutil.parser import parse
@@ -18,6 +19,8 @@ from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
+
+from DatabaseHelper import DatabaseHelper
 
 
 class RfBandScraping:
@@ -161,17 +164,24 @@ class RfBandScraping:
         """
         print("extract_bands")
         sleep(5)
+        play_info_faults = 0
         for elem in tqdm(self.band_list):
             try:
                 link = elem.find_element(By.TAG_NAME, 'header')
                 band = None
                 try:
                     band = link.find_element(By.TAG_NAME, 'h1')
+                    # .encode('utf-8')#  .decode('utf-8')
+                    band_name = band.text
+                    # if isinstance(band_name, str):
+                    #     print("ja!")
+                    #     band_name = unicode(band_name, "utf-8")
+                    # print(type(band_name))
                     country = link.find_elements(By.TAG_NAME, 'span')[2]
-                    self.bands[band.text]['country'] = country.text
-                    self.bands[band.text]['link'] = band
-                    self.bands[band.text]['category'] = None
-                    self.bands[band.text]['category_length'] = None
+                    self.bands[band_name]['country'] = country.text
+                    self.bands[band_name]['link'] = band
+                    self.bands[band_name]['category'] = None
+                    self.bands[band_name]['category_length'] = None
                     try:
                         play_info_div = link.find_element(
                             By.CSS_SELECTOR, 'div.media__artist-gig')
@@ -186,26 +196,31 @@ class RfBandScraping:
                             stage = stage.title()
                             spilletime = (play_info[: -6] + " " + year +
                                           " " + play_info[-5:]).title()
-                            self.bands[band.text]['stage'] = stage
-                            self.bands[band.text]['time'] = parse(
+                            self.bands[band_name]['stage'] = stage
+                            self.bands[band_name]['time'] = parse(
                                 spilletime, fuzzy=True)
                         except Exception:
-                            print(
-                                "Couldn't find the 'spans' in play_info_div (no info about which stage and time the band will play, is released yet)")
-                            self.bands[band.text]['stage'] = None
-                            self.bands[band.text]['time'] = None
+                            play_info_faults += 1
+                            self.bands[band_name]['stage'] = None
+                            self.bands[band_name]['time'] = None
                     except Exception:
                         print("Couldn't find play_info_div")
-                        self.bands[band.text]['stage'] = None
-                        self.bands[band.text]['time'] = None
+                        self.bands[band_name]['stage'] = None
+                        self.bands[band_name]['time'] = None
                 except Exception as e:
                     print(
                         "Could find the name and/or country of the band: {}".
                         format(str(e)))
             except Exception as e:
                 print("Couldn't execute: {0}".format(e))
-        print("Number of bands: {}".format(len(self.bands)))
         pprint.pprint(self.bands)
+        print("Number of bands: {}".format(len(self.bands)))
+        if play_info_faults > 0:
+            print("Couldn't find the 'spans' in play_info_div \
+                (no info about which stage and time the band will play, \
+                is released yet) for --- {} --- oyt of total {} bands"
+                  .format(play_info_faults, len(self.bands)))
+        self.bands.pop("TRENTEMØLLER")
 
     def detectYear(self):
         """ Get the working year at Roskilde Festival
@@ -278,10 +293,11 @@ class RfBandScraping:
         print("Fetching headliners...")
         for band in tqdm(headliners):
             try:
-                band_navn = band.find_element(By.TAG_NAME, 'h1')
-                self.bands[band_navn.text]['category'] = self.categories[
+                band_name = band.find_element(
+                    By.TAG_NAME, 'h1').find_element(By.TAG_NAME, 'em')
+                self.bands[band_name.text]['category'] = self.categories[
                     'headliners']['category']
-                self.bands[band_navn.text]['category_length'] = \
+                self.bands[band_name.text]['category_length'] = \
                     self.categories['headliners']['playlength']
             except Exception as e:
                 print("Kunne ikke finde band navn i headliners")
@@ -289,10 +305,11 @@ class RfBandScraping:
         print("Fetching big names...")
         for band in tqdm(big_names):
             try:
-                band_navn = band.find_element(By.TAG_NAME, 'h2')
-                self.bands[band_navn.text]['category'] = self.categories[
+                band_name = band.find_element(
+                    By.TAG_NAME, 'h2').find_element(By.TAG_NAME, 'em')
+                self.bands[band_name.text]['category'] = self.categories[
                     'big_names']['category']
-                self.bands[band_navn.text]['category_length'] = \
+                self.bands[band_name.text]['category_length'] = \
                     self.categories['big_names']['playlength']
             except Exception as e:
                 print("Couldn't find band name in big_names")
@@ -300,10 +317,11 @@ class RfBandScraping:
         print("Fetching common names...")
         for band in tqdm(common_names):
             try:
-                band_navn = band.find_element(By.TAG_NAME, 'h3')
-                self.bands[band_navn.text]['category'] = self.categories[
+                band_name = band.find_element(
+                    By.TAG_NAME, 'h3').find_element(By.TAG_NAME, 'em')
+                self.bands[band_name.text]['category'] = self.categories[
                     'common_names']['category']
-                self.bands[band_navn.text]['category_length'] = \
+                self.bands[band_name.text]['category_length'] = \
                     self.categories['common_names']['playlength']
             except Exception as e:
                 print("Couldn't find band name in common_names")
@@ -311,14 +329,16 @@ class RfBandScraping:
         print("Fetching small names....")
         for band in tqdm(small_names):
             try:
-                band_navn = band.find_element(By.TAG_NAME, 'h4')
-                self.bands[band_navn.text]['category'] = self.categories[
+                band_name = band.find_element(
+                    By.TAG_NAME, 'h4').find_element(By.TAG_NAME, 'em')
+                self.bands[band_name.text]['category'] = self.categories[
                     'small_names']['category']
-                self.bands[band_navn.text]['category_length'] = \
+                self.bands[band_name.text]['category_length'] = \
                     self.categories['small_names']['playlength']
             except Exception as e:
                 print("Couldn't find band name in small_names")
 
+        self.bands.pop("TRENTEMØLLER")
         pprint.pprint(self.bands)
         print("Number of bands: {}".format(len(self.bands)))
 
@@ -429,131 +449,8 @@ class RfBandScraping:
     def get_bands(self):
         return self.bands
 
-
-class DatabaseHelper(object):
-
-    """docstring for DatabaseHelper"""
-
-    def __init__(self):
-        now = datetime.datetime.now()
-        self.current_year = now.year
-        with open("db_info.txt", 'r') as f:
-            login_info = f.readlines()
-        login_info_dict = dict(line.strip().split("=")
-                               for line in login_info if not line.startswith("#"))
-        self.db = pymysql.connect(host=login_info_dict["host"],
-                                  user=login_info_dict["user"],
-                                  passwd=login_info_dict["password"],
-                                  db=login_info_dict["db"],
-                                  port=login_info_dict["port"],
-                                  charset='utf8')
-        self.current_bands = self.fetch_current_bands()
-
-    def fetch_current_bands(self):
-        cursor = self.db.cursor()
-        # print(self.current_year)
-        cursor.execute(
-            """SELECT * FROM band_spilleplan WHERE aar=%s""",
-            (self.current_year,))
-
-        result = defaultdict(dict)
-        rows = cursor.fetchall()
-        # print(rows)
-        for row in rows:
-            result[row[1]]['time'] = row[2]
-            result[row[1]]['stage'] = row[3]
-            result[row[1]]['category'] = row[4]
-
-        return result
-
-    def insert_update_bands(self, bands):
-        print("insert_update_bands")
-        sql_insert = []
-        sql_update = []
-        #current_bands = self.fetch_current_bands()
-        new_bands = []
-        i = 1
-        for band, _ in tqdm(bands.items()):
-            # print(i)
-            cat = bands[band]['category']
-            spilletime = bands[band]['time']
-            stage = bands[band]['stage']
-            if band in self.current_bands:
-                #print("{} skal opdateres?".format(band))
-                if self.current_bands[band]['category'] != cat:
-                    print("categoryen for {} skal opdateres".format(band))
-                if self.current_bands[band]['time'] != spilletime:
-                    print("spilletime for {} skal opdateres".format(band))
-                if self.current_bands[band]['stage'] != spilletime:
-                    print("stage for {} skal opdateres".format(band))
-            else:
-                # .encode('utf-8')
-                sql_insert.append(
-                    (self.current_year, band, spilletime, stage, cat))
-                new_bands.append(band)
-            i += 1
-        if sql_insert:
-            print(
-                "Number of new bands: {}\n--------------".format(len(new_bands)))
-            # print(new_bands)
-            # print(sql_insert)
-
-            cursor = self.db.cursor()
-            try:
-                cursor.executemany(
-                    "INSERT INTO band_spilleplan VALUES(%s, %s, %s, %s, %s);",
-                    sql_insert)
-                self.db.commit()
-            except Exception as e:
-                print("Der opstod en fejl: {}".format(str(e)))
-
-    def delete_bands(self, bands):
-        pass
-
-    def insert_update_categories(self, categories):
-        sql_insert = []
-        sql_update = []
-        current_categories = self.fetch_current_categories()
-        for key, sub_dict in categories.items():
-            vals = list(set(sub_dict.keys()))
-            if "category" in vals and 'playlength' in vals and 'db_navn' in vals:
-                cat = categories[key]['category']
-                playlength = categories[key]['playlength']
-                db_navn = categories[key]['db_navn']
-                if cat in current_categories:
-                    print("{} findes allerede. Skal tjekkes".format(cat))
-                    if db_navn != current_categories['db_navn'] or \
-                            playlength != \
-                            current_categories['playlength']:
-                        sql_update.append((cat, db_navn, playlength, cat))
-                else:
-                    sql_insert.append((cat, db_navn, playlength))
-                    print("{} mangler!".format(cat))
-            print("{} = {} ".format(key, vals))
-        #print("sql = {}".format(sql))
-        if sql_insert:
-            cursor = self.db.cursor()
-            cursor.executemany(
-                "INSERT INTO band_category VALUES(%s, %s, %s);", sql_insert)
-            self.db.commit()
-        if sql_update:
-            cursor = self.db.cursor()
-            cursor.executemany("""UPDATE band_category
-                                  SET category=%s, category_tekst=%s, \
-                                  koncert_langde=%s
-                                  WHERE category=%s;""", sql_update)
-            self.db.commit()
-
-    def fetch_current_categories(self):
-        cursor = self.db.cursor()
-        cursor.execute("""SELECT * FROM band_kategori""")
-        result = defaultdict(dict)
-        rows = cursor.fetchall()
-        for row in rows:
-            result[row[0]]['db_navn'] = row[1]
-            result[row[0]]['playlength'] = row[2]
-        return result
-
+    def get_year(self):
+        return self.current_year
 
 if __name__ == '__main__':
     now = datetime.datetime.now()
@@ -591,19 +488,18 @@ cols must be grouped under the correct table"""
     if args.output == "database" and args.dbinfo is None:
         arg_parser.error("Missing database information file")
     print(args.year)
-    #rfbs = RfBandScraping(year)
-    # rfbs.detectYear()
+    rfbs = RfBandScraping(year)
+    d = DatabaseHelper(rfbs.current_year)
+    d.insert_update_categories(rfbs.categories)
 
-    #d = DatabaseHelper()
-    # d.insert_update_categories(rfbs.categories)
-
-    # rfbs.get_music_as_list()
-    # rfbs.extract_bands()
+    rfbs.get_music_as_list()
+    rfbs.extract_bands()
 
     # rfbs.spilletime_leg()
-    # rfbs.get_category()
+    rfbs.get_category()
 
-    # d.insert_update_bands(rfbs.bands)
+    d.insert_update_bands(rfbs.bands)
+    d.delete_bands(rfbs.bands)
     #res = d.fetch_current_bands()
     # pprint.pprint(res)
     # pprint.pprint(rfbs.bands)
