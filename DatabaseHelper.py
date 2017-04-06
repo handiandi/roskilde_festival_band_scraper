@@ -13,8 +13,8 @@ class DatabaseHelper:
             login_info = f.readlines()
         login_info_dict = dict(line.strip().split("=")
                                for line in login_info if not line.startswith("#"))
-        login_info_dict = {k.replace(' ', ''): v.replace(' ', '') for k, v in login_info_dict.items()}
-        print(login_info_dict)
+        login_info_dict = {
+            k.replace(' ', ''): v.replace(' ', '') for k, v in login_info_dict.items()}
         self.db = pymysql.connect(host=login_info_dict["host"],
                                   user=login_info_dict["user"],
                                   passwd=login_info_dict["password"],
@@ -41,15 +41,14 @@ class DatabaseHelper:
         return result
 
     def insert_update_bands(self, bands):
-        print("insert_update_bands")
+        #print("insert_update_bands")
         sql_insert = []
         sql_update = []
-        #current_bands = self.fetch_current_bands()
         new_bands = []
         i = 1
         for band, _ in tqdm(bands.items()):
             # print(i)
-            print(band)
+            # print(band)
             cat = bands[band]['category']
             spilletime = bands[band]['time']
             stage = bands[band]['stage']
@@ -68,31 +67,42 @@ class DatabaseHelper:
                 new_bands.append(band)
             i += 1
         if sql_insert:
-            print(
-                "Number of new bands: {}\n--------------".format(len(new_bands)))
-            # print(new_bands)
-            # print(sql_insert)
-
+            print("Disse {} bands skal gemmes i databasen (nye bands): {}".
+                  format(len(new_bands), new_bands))
             cursor = self.db.cursor()
             try:
                 cursor.executemany(
                     "INSERT INTO band_spilleplan VALUES(%s, %s, %s, %s, %s);",
                     sql_insert)
                 self.db.commit()
+                print("Bandsne blev gemt!")
             except Exception as e:
-                print("Der opstod en fejl: {}".format(str(e)))
+                print("Der opstod en fejl ved indsættelse af bands: {}".
+                      format(str(e)))
+        else:
+            print("Ingen nye bands!")
 
     def delete_bands(self, bands):
         cursor = self.db.cursor()
-        try:
-            cursor.executemany(
-               "DELETE FROM band_spilleplan WHERE band_navn=%s AND aar=%s;",
-               list(set(self.current_bands.keys()) - set(bands.keys())),
-               self.current_year)
-            self.db.commit()
-        except Exception as e:
-            print("Der opstod en fejl: {}".format(str(e)))
-
+        deletable_bands = list(
+            set(self.current_bands.keys()) - set(bands.keys()))
+        if deletable_bands:
+            print("Disse {} bands skal slettes: {}".
+                  format(len(deletable_bands),
+                         deletable_bands))
+            query_data = [(band, self.current_year) for band
+                          in deletable_bands]
+            try:
+                cursor.executemany(
+                    "DELETE FROM band_spilleplan WHERE band_navn=%s AND aar=%s;",
+                    query_data)
+                self.db.commit()
+                print("Bandsne blev slettet")
+            except Exception as e:
+                print("Der opstod en fejl ved sletning af bands: {}".
+                      format(str(e)))
+        else:
+            print("Ingen bands der skulle slettes")
 
     def insert_update_categories(self, categories):
         sql_insert = []
@@ -105,7 +115,7 @@ class DatabaseHelper:
                 playlength = categories[key]['playlength']
                 db_navn = categories[key]['db_navn']
                 if cat in current_categories:
-                    print("{} findes allerede. Skal tjekkes".format(cat))
+                    #print("{} findes allerede. Skal tjekkes".format(cat))
                     if db_navn != current_categories['db_navn'] or \
                             playlength != \
                             current_categories['playlength']:
@@ -113,13 +123,17 @@ class DatabaseHelper:
                 else:
                     sql_insert.append((cat, db_navn, playlength))
                     print("{} mangler!".format(cat))
-            print("{} = {} ".format(key, vals))
+            #print("{} = {} ".format(key, vals))
         #print("sql = {}".format(sql))
         if sql_insert:
-            cursor = self.db.cursor()
-            cursor.executemany(
-                "INSERT INTO band_kategori VALUES(%s, %s, %s);", sql_insert)
-            self.db.commit()
+            try:
+                cursor = self.db.cursor()
+                cursor.executemany(
+                    "INSERT INTO band_kategori VALUES(%s, %s, %s);", sql_insert)
+                self.db.commit()
+                print("Kategorierne blev gemt i databasen")
+            except Exception as e:
+                print("Kunne ikke indsætte kategorierne: {}".format(str(e)))
         if sql_update:
             cursor = self.db.cursor()
             cursor.executemany("""UPDATE band_kategori
