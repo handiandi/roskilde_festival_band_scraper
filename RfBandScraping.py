@@ -144,7 +144,7 @@ class RfBandScraping:
         length = len(self.browser.page_source)
         while True:
             self.browser.execute_script(script)
-            print("Scrolling page...")
+            #print("Scrolling page...")
             sleep(1)
             if length == len(self.browser.page_source):
                 if count >= 3:
@@ -213,14 +213,14 @@ class RfBandScraping:
                         format(str(e)))
             except Exception as e:
                 print("Couldn't execute: {0}".format(e))
-        pprint.pprint(self.bands)
-        print("Number of bands: {}".format(len(self.bands)))
+        # pprint.pprint(self.bands)
+        #print("Number of bands: {}".format(len(self.bands)))
         if play_info_faults > 0:
-            print("Couldn't find the 'spans' in play_info_div \
-                (no info about which stage and time the band will play, \
-                is released yet) for --- {} --- oyt of total {} bands"
+            # Couldn't find the 'spans' in play_info_div
+            print("No info about which stage and time the band will play for --- {} --- out of total {} bands"
                   .format(play_info_faults, len(self.bands)))
-        self.bands.pop("TRENTEMØLLER")
+        #self.bands.pop("NONAME")
+        #self.bands.pop("NEUROSIS")
 
     def detectYear(self):
         """ Get the working year at Roskilde Festival
@@ -250,13 +250,13 @@ class RfBandScraping:
         sleep(2)
         poster_link = None
         try:
-            print("Try to find the link to the poster")
+            #print("Try to find the link to the poster")
             poster_link = self.browser.find_element(
                 By.XPATH, self.page_info['bands_as_poster_xpath'])
             poster_link.click()
         except:
-            print("øv")
-        print("sover 2 sek")
+            print("Couldn't find the link to the poster")
+        #print("sover 2 sek")
         sleep(2)
         # self.browser.save_screenshot('poster.png')
 
@@ -265,7 +265,7 @@ class RfBandScraping:
         common_names_div = None
         small_names_div = None
         sleep(2)
-        print("Fetching divs...")
+        #print("Fetching divs...")
         try:
             headliners_div = self.browser.find_element(
                 By.XPATH, self.page_info['poster_headliners_xpath'])
@@ -276,7 +276,7 @@ class RfBandScraping:
             small_names_div = self.browser.find_element(
                 By.XPATH, self.page_info['poster_small_names_xpath'])
         except Exception:
-            print("Kunne ikke finde placat divs")
+            print("Kunne ikke finde plakat divs")
 
         headliners = None
         big_names = None
@@ -290,7 +290,7 @@ class RfBandScraping:
         except Exception as e:
             raise
 
-        print("Fetching headliners...")
+        #print("Fetching headliners...")
         for band in tqdm(headliners):
             try:
                 band_name = band.find_element(
@@ -300,9 +300,9 @@ class RfBandScraping:
                 self.bands[band_name.text]['category_length'] = \
                     self.categories['headliners']['playlength']
             except Exception as e:
-                print("Kunne ikke finde band navn i headliners")
+                print("Couldn't find {} in headliners".format(band))
 
-        print("Fetching big names...")
+        #print("Fetching big names...")
         for band in tqdm(big_names):
             try:
                 band_name = band.find_element(
@@ -312,9 +312,9 @@ class RfBandScraping:
                 self.bands[band_name.text]['category_length'] = \
                     self.categories['big_names']['playlength']
             except Exception as e:
-                print("Couldn't find band name in big_names")
+                print("Couldn't find {} in big_names".format(band))
 
-        print("Fetching common names...")
+        #print("Fetching common names...")
         for band in tqdm(common_names):
             try:
                 band_name = band.find_element(
@@ -324,9 +324,9 @@ class RfBandScraping:
                 self.bands[band_name.text]['category_length'] = \
                     self.categories['common_names']['playlength']
             except Exception as e:
-                print("Couldn't find band name in common_names")
+                print("Couldn't find {} in common_names".format(band))
 
-        print("Fetching small names....")
+        #print("Fetching small names....")
         for band in tqdm(small_names):
             try:
                 band_name = band.find_element(
@@ -336,11 +336,13 @@ class RfBandScraping:
                 self.bands[band_name.text]['category_length'] = \
                     self.categories['small_names']['playlength']
             except Exception as e:
-                print("Couldn't find band name in small_names")
+                print("Couldn't find {} in small_names".format(band))
 
-        self.bands.pop("TRENTEMØLLER")
-        pprint.pprint(self.bands)
-        print("Number of bands: {}".format(len(self.bands)))
+        #self.bands.pop("NONAME")
+        #self.bands.pop("NEUROSIS")
+
+        # pprint.pprint(self.bands)
+        #print("Number of bands: {}".format(len(self.bands)))
 
     """
     An experimentel methods
@@ -487,7 +489,8 @@ cols must be grouped under the correct table"""
     args = arg_parser.parse_args()
     if args.output == "database" and args.dbinfo is None:
         arg_parser.error("Missing database information file")
-    print(args.year)
+    print("############### Roskilde band scraper - log {} ##############".
+          format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
     rfbs = RfBandScraping(year)
     d = DatabaseHelper(rfbs.current_year)
     d.insert_update_categories(rfbs.categories)
@@ -497,9 +500,10 @@ cols must be grouped under the correct table"""
 
     # rfbs.spilletime_leg()
     rfbs.get_category()
-
+    print("-------------------- Result: ---------------------------")
     d.insert_update_bands(rfbs.bands)
     d.delete_bands(rfbs.bands)
+    print("--------------------------------------------------------\n\n")
     #res = d.fetch_current_bands()
     # pprint.pprint(res)
     # pprint.pprint(rfbs.bands)
