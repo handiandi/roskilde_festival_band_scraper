@@ -6,7 +6,7 @@ And in some time I will write some documentation at how to use it.
 
 ## Installation
 1. Clone/download the files from the repository
-2. Download and install PhantomJS version **2.1.1** (or higher) by following [this guide](https://gist.github.com/julionc/7476620). **Remember to install 2.1.1 (or higher) and not 1.9.8!**
+2. Download and install PhantomJS version **2.1.1** (or higher) by following [this guide](phantomjs_guide.md).
 3. Install Pipy packages: `pip3 install -r requirements.txt`
 4. Done! :)
 
