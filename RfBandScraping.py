@@ -22,6 +22,10 @@ from argparse import RawTextHelpFormatter
 
 from DatabaseHelper import DatabaseHelper
 
+import socket
+import sys
+import time
+
 
 class RfBandScraping:
 
@@ -454,7 +458,24 @@ class RfBandScraping:
     def get_year(self):
         return self.current_year
 
+"""
+domain socket: avoid script to run if it already running
+"""
+def get_lock(process_name):
+    # Without holding a reference to our socket somewhere it gets garbage
+    # collected when the function exits
+    get_lock._lock_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+
+    try:
+        get_lock._lock_socket.bind('\0' + process_name)
+        print( 'I got the lock')
+    except socket.error:
+        print('lock exists')
+        sys.exit(1)
+
+
 if __name__ == '__main__':
+    get_lock("roskilde_scraper")
     now = datetime.datetime.now()
     year = None  # now.year
     if len(sys.argv) == 2:
