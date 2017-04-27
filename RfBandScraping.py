@@ -40,28 +40,30 @@ class RfBandScraping:
         self.page_info = defaultdict(dict)
         self.page_info[
             'bands_as_list_xpath'] = '//*[@id="ng-app"]/body/div[2]/div[2]/\
-                                      div[2]/div[1]/div[2]/div[1]/section/\
-                                      div/label[2]'
+                                     div[2]/div/div[1]/div[1]/section/div/\
+                                     label[2]/span'
+                                     #'//*[@id="ng-app"]/body/div[2]/div[2]/\
+                                     # div[2]/div[1]/div[2]/div[1]/section/\
+                                     # div/label[2]'
+                                     
         self.page_info[
             'bands_as_poster_xpath'] = '//*[@id="ng-app"]/body/div[2]/div[2]\
-                                        /div[2]/div[1]/div[2]/div[1]/section/\
-                                        div/label[3]'
+                                       /div[2]/div/div[1]/div[1]/section/div\
+                                       /label[3]'
         self.page_info[
-            'poster_headliners_xpath'] = '//*[@id="ng-app"]/body/div[2]/\
-                                          div[2]/div[2]/div[1]/div[3]/div/\
-                                          div[1]/div[1]'
+            'poster_headliners_xpath'] = '//*[@id="ng-app"]/body/div[2]/div[2]\
+                                          /div[2]/div/div[2]/div/div[1]/div[1]'
         self.page_info[
-            'poster_bignames_xpath'] = '//*[@id="ng-app"]/body/div[2]/\
-                                          div[2]/div[2]/div[1]/div[3]/div/\
-                                          div[1]/div[2]'
+            'poster_bignames_xpath'] = '//*[@id="ng-app"]/body/div[2]/div[2]/\
+                                        div[2]/div/div[2]/div/div[1]/div[2]'
         self.page_info[
             'poster_common_names_xpath'] = '//*[@id="ng-app"]/body/div[2]/\
-                                         div[2]/div[2]/div[1]/div[3]/div/\
-                                         div[1]/div[3]'
+                                            div[2]/div[2]/div/div[2]/div/\
+                                            div[1]/div[3]'
         self.page_info[
             'poster_small_names_xpath'] = '//*[@id="ng-app"]/body/div[2]/\
-                                          div[2]/div[2]/div[1]/div[3]/div/\
-                                          div[1]/div[4]'
+                                           div[2]/div[2]/div/div[2]/div/\
+                                           div[1]/div[4]'
         self.categories = defaultdict(dict)
         self.categories['headliners']['category'] = 1
         self.categories['headliners']['playlength'] = 2.0
@@ -123,8 +125,8 @@ class RfBandScraping:
         band_list = None
         try:
             band_list = self.browser.find_element(
-                By.XPATH, '//*[@id="ng-app"]/body/div[2]/div[2]/div[2]/div[1]/\
-                div[3]/div/div[1]/ul')
+                By.XPATH, '//*[@id="ng-app"]/body/div[2]/div[2]/div[2]/div/\
+                           div[2]/div/div[1]/ul')
         except Exception as e:
             print("Could find the list with bands: {0}".format(e))
 
@@ -168,7 +170,7 @@ class RfBandScraping:
         """
         print("extract_bands")
         sleep(5)
-        play_info_faults = 0
+        play_info_faults = []
         for elem in tqdm(self.band_list):
             try:
                 link = elem.find_element(By.TAG_NAME, 'header')
@@ -191,7 +193,7 @@ class RfBandScraping:
                             By.CSS_SELECTOR, 'div.media__artist-gig')
                         try:
                             spans = play_info_div.find_elements(
-                                By.CSS_SELECTOR, 'span')
+                                By.CSS_SELECTOR, 'article > header > div > div > span') #'span'
                             play_info = spans[0].text
                             stage = play_info[play_info.rfind(" ") + 1:]
                             play_info = play_info[:play_info.rfind(" ") - 1]
@@ -204,7 +206,7 @@ class RfBandScraping:
                             self.bands[band_name]['time'] = parse(
                                 spilletime, fuzzy=True)
                         except Exception:
-                            play_info_faults += 1
+                            play_info_faults.append(band_name)
                             self.bands[band_name]['stage'] = None
                             self.bands[band_name]['time'] = None
                     except Exception:
@@ -219,12 +221,14 @@ class RfBandScraping:
                 print("Couldn't execute: {0}".format(e))
         # pprint.pprint(self.bands)
         #print("Number of bands: {}".format(len(self.bands)))
-        if play_info_faults > 0:
+        if play_info_faults:
             # Couldn't find the 'spans' in play_info_div
-            print("No info about which stage and time the band will play for --- {} --- out of total {} bands"
+            print("Couldn't find info about which stage and time the band will play for theese bands:\n{}"
                   .format(play_info_faults, len(self.bands)))
         #self.bands.pop("NONAME")
         #self.bands.pop("NEUROSIS")
+        #pprint.pprint(self.bands)
+        #sys.exit()
 
     def detectYear(self):
         """ Get the working year at Roskilde Festival
@@ -396,29 +400,30 @@ class RfBandScraping:
                             dd[stage][temp_dag] = [tup]
                 else:
                     # if len(lst) == 1:
-                    hours_between = (tup[1] - lst[i - 2][1]).seconds / 60 / 60
-                    if hours_between < 6.0:
-                        if int(temp_dag) == -1:
-                            temp_dag = tup[1].strftime("%w")
-                        if temp_dag not in dd[stage]:
-                            dd[stage][temp_dag] = [tup]
-                        else:
-                            dd[stage][temp_dag].append(tup)
-                    else:
-                        if hours_between < 16.0:
-                            if str(temp_dag) != '-1':
-                                dd[stage][temp_dag].append(tup)
+                    if tup[1] is not None and lst[i - 2][1] is not None:
+                        hours_between = (tup[1] - lst[i - 2][1]).seconds / 60 / 60
+                        if hours_between < 6.0:
+                            if int(temp_dag) == -1:
+                                temp_dag = tup[1].strftime("%w")
+                            if temp_dag not in dd[stage]:
+                                dd[stage][temp_dag] = [tup]
                             else:
-                                print("feeejl???")
-                            temp_dag = str(int(temp_dag) + 1)
-                            print("stage = {} - band = {}\n    time = {}\n----------\n".
-                                  format(stage, tup[0], tup[1]))
-                            # print("i = {} - stage = {} - band = {}\n    time = {}\n    hb = {}\n----------\n".
-                            # format(i, stage, lst[i][0], lst[i][1],
-                            # hours_between))
+                                dd[stage][temp_dag].append(tup)
                         else:
-                            temp_dag = str(int(temp_dag) + 1)
-                            dd[stage][temp_dag].append(tup)
+                            if hours_between < 16.0:
+                                if str(temp_dag) != '-1':
+                                    dd[stage][temp_dag].append(tup)
+                                else:
+                                    print("feeejl???")
+                                temp_dag = str(int(temp_dag) + 1)
+                                print("stage = {} - band = {}\n    time = {}\n----------\n".
+                                      format(stage, tup[0], tup[1]))
+                                # print("i = {} - stage = {} - band = {}\n    time = {}\n    hb = {}\n----------\n".
+                                # format(i, stage, lst[i][0], lst[i][1],
+                                # hours_between))
+                            else:
+                                temp_dag = str(int(temp_dag) + 1)
+                                dd[stage][temp_dag].append(tup)
 
         #[('BABY BLOOD', datetime.datetime(2016, 6, 26, 20, 0), 0.0),
         # ('M.I.L.K.',   datetime.datetime(2016, 6, 27, 20, 0), 0.0),
@@ -518,6 +523,8 @@ cols must be grouped under the correct table"""
 
     rfbs.get_music_as_list()
     rfbs.extract_bands()
+    #rfbs.spilletime_leg()
+    #sys.exit()
 
     # rfbs.spilletime_leg()
     rfbs.get_category()
