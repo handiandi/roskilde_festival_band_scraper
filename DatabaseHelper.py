@@ -41,7 +41,7 @@ class DatabaseHelper:
         return result
 
     def insert_update_bands(self, bands):
-        #print("insert_update_bands")
+        # print("insert_update_bands")
         sql_insert = []
         sql_update = []
         new_bands = []
@@ -56,10 +56,13 @@ class DatabaseHelper:
                 #print("{} skal opdateres?".format(band))
                 if self.current_bands[band]['category'] != cat:
                     print("categoryen for {} skal opdateres".format(band))
+                    sql_update.append(band)
                 if self.current_bands[band]['time'] != spilletime:
                     print("spilletime for {} skal opdateres".format(band))
-                if self.current_bands[band]['stage'] != spilletime:
+                    sql_update.append(band)
+                if self.current_bands[band]['stage'] != stage:
                     print("stage for {} skal opdateres".format(band))
+                    sql_update.append(band)
             else:
                 # .encode('utf-8')
                 sql_insert.append(
@@ -81,6 +84,28 @@ class DatabaseHelper:
                       format(str(e)))
         else:
             print("Ingen nye bands!")
+
+        if sql_update:
+            sql_update2 = []
+            sql_update = list(set(sql_update))
+            print("Der skal opdateres info for {} bands".
+                  format(len(sql_update)))
+            sql_update2 = [(bands[band]['time'], bands[band]['stage'],
+                            bands[band]['category'], self.current_year, band)
+                           for band in sql_update]
+            try:
+                cursor = self.db.cursor()
+                cursor.executemany("""UPDATE band_spilleplan
+                                      SET spille_tid=%s, scene=%s, \
+                                      kategori=%s
+                                      WHERE aar=%s AND band_navn=%s;""",
+                                   sql_update2)
+                self.db.commit()
+                print("Bands-info blev opdateret")
+            except Exception as e:
+                print("Kunne ikke opdatere band-info: {}".format(str(e)))
+        else:
+            print("Intet band-info skulle opdteres")
 
     def delete_bands(self, bands):
         cursor = self.db.cursor()
