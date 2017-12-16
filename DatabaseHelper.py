@@ -66,7 +66,7 @@ class DatabaseHelper:
             else:
                 # .encode('utf-8')
                 sql_insert.append(
-                    (self.current_year, band, spilletime, stage, cat))
+                    (self.current_year, band, spilletime, stage, None, cat))
                 new_bands.append(band)
             i += 1
         if sql_insert:
@@ -75,7 +75,7 @@ class DatabaseHelper:
             cursor = self.db.cursor()
             try:
                 cursor.executemany(
-                    "INSERT INTO band_spilleplan VALUES(%s, %s, %s, %s, %s);",
+                    "INSERT INTO band_spilleplan VALUES(%s, %s, %s, %s, %s, %s);",
                     sql_insert)
                 self.db.commit()
                 print("Bandsne blev gemt!")
@@ -105,26 +105,26 @@ class DatabaseHelper:
             except Exception as e:
                 print("Kunne ikke opdatere band-info: {}".format(str(e)))
         else:
-            print("Intet band-info skulle opdteres")
+            print("Intet band-info skulle opdateres")
 
     def delete_bands(self, bands):
         cursor = self.db.cursor()
         deletable_bands = list(
             set(self.current_bands.keys()) - set(bands.keys()))
         if deletable_bands:
-            print("Disse {} bands skal slettes: {}".
+            print("Disse {} bands er blevet aflyst: {}".
                   format(len(deletable_bands),
                          deletable_bands))
-            query_data = [(band, self.current_year) for band
+            query_data = [("aflyst", band, self.current_year) for band
                           in deletable_bands]
             try:
                 cursor.executemany(
-                    "DELETE FROM band_spilleplan WHERE band_navn=%s AND aar=%s;",
+                    "UPDATE band_spilleplan SET aflyst=%s WHERE band_navn=%s AND aar=%s;",
                     query_data)
                 self.db.commit()
-                print("Bandsne blev slettet")
+                print("Bands-info er blevet opdateret med aflyst")
             except Exception as e:
-                print("Der opstod en fejl ved sletning af bands: {}".
+                print("Der opstod en fejl ved aflysning af bands: {}".
                       format(str(e)))
         else:
             print("Ingen bands der skulle slettes")
