@@ -16,6 +16,7 @@ from tqdm import tqdm
 from dateutil.parser import parse
 #from chardet.universaldetector import UniversalDetector
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+from bs4 import BeautifulSoup
 
 from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
@@ -24,7 +25,6 @@ from DatabaseHelper import DatabaseHelper
 
 import socket
 import sys
-import time
 
 
 class RfBandScraping:
@@ -40,12 +40,15 @@ class RfBandScraping:
         self.page_info = defaultdict(dict)
         self.page_info[
             'bands_as_list_xpath'] = '//*[@id="ng-app"]/body/div[2]/div[2]/\
-                                     div[2]/div/div[1]/div[1]/section/div/\
-                                     label[2]/span'
-                                     #'//*[@id="ng-app"]/body/div[2]/div[2]/\
-                                     # div[2]/div[1]/div[2]/div[1]/section/\
-                                     # div/label[2]'
-                                     
+                                      div/div/filter-component/div/div[1]/\
+                                      section/div/label[2]'
+
+
+
+        #'//*[@id="ng-app"]/body/div[2]/div[2]/\
+        # div[2]/div[1]/div[2]/div[1]/section/\
+        # div/label[2]'
+
         self.page_info[
             'bands_as_poster_xpath'] = '//*[@id="ng-app"]/body/div[2]/div[2]\
                                        /div[2]/div/div[1]/div[1]/section/div\
@@ -92,43 +95,43 @@ class RfBandScraping:
         driver.execute_script('document.body.style.background = "white"')
         return driver
 
-    def load_page(self):
+    # def get_music_as_list(self):
+    #     try:
+    #         band_list = self.browser.find_element(
+    #             By.XPATH, selector)
+    #     except Exception as e:
+    #         print("Could find the list with bands: {0}".format(e))
+
+    #     # sys.exit()
+        
+    #     if band_list is not None:
+    #         try:
+    #             self.band_list = band_list.find_elements(By.TAG_NAME, 'li')
+    #             print("Band li tags found")
+    #         except Exception:
+    #             print("Couldn't find band li tags")
+    #     self.band_list = [elem for i, elem in enumerate(self.band_list)
+    #                       if i % 6 == 0]
+    #     print(len(self.band_list))
+
+    def scroll_page_to_bottom(self, script):
+        count = 0
+        length = len(self.browser.page_source)
+        while True:
+            self.browser.execute_script(script)
+            print("Scrolling page...")
+            sleep(1)
+            if length == len(self.browser.page_source):
+                if count >= 3:
+                    break
+                count += 1
+            length = len(self.browser.page_source)
+
+    def extract_bands2(self):
+        kategori_status = self.get_category()
+        print(kategori_status)
         self.browser.get(
             "http://www.roskilde-festival.dk/music/" + str(self.current_year))
-        self.browser.save_screenshot('start_page.png')
-        music_link = None
-        try:
-            music_link = self.browser.find_element(
-                By.XPATH, '//*[@id="ng-app"]/body/div[2]/nav/div[1]/div[2]\
-                /ul/li[2]/a')
-            music_link.click()
-        except:
-            print("ohh dammit!")
-
-    def get_music_as_list(self):
-        self.browser.get(
-            "http://www.roskilde-festival.dk/music/" + str(self.current_year))
-        link = None
-        try:
-            link = self.browser.find_element(
-                By.XPATH, self.page_info['bands_as_list_xpath'])
-        except Exception:
-            print("Couldn't find the link to get the bands as list form")
-
-        try:
-            sleep(2)
-            link.click()
-        except Exception as e:
-            print("Couldn't click on the link to the band list: {0}".format(e))
-        sleep(3)
-
-        band_list = None
-        try:
-            band_list = self.browser.find_element(
-                By.XPATH, '//*[@id="ng-app"]/body/div[2]/div[2]/div[2]/div/\
-                           div[2]/div/div[1]/ul')
-        except Exception as e:
-            print("Could find the list with bands: {0}".format(e))
 
         script = """var elements = document.getElementsByClassName(\
                     'app__scroller app__scroller--artists ng-scope');
@@ -136,27 +139,19 @@ class RfBandScraping:
                     element.scrollTop = element.scrollHeight;"""
 
         self.scroll_page_to_bottom(script)
-        if band_list is not None:
-            try:
-                self.band_list = band_list.find_elements(By.TAG_NAME, 'li')
-                print("Band li tags found")
-            except Exception:
-                print("Couldn't find band li tags")
-        self.band_list = [elem for i, elem in enumerate(self.band_list)
-                          if i % 6 == 0]
-
-    def scroll_page_to_bottom(self, script):
-        count = 0
-        length = len(self.browser.page_source)
-        while True:
-            self.browser.execute_script(script)
-            #print("Scrolling page...")
-            sleep(1)
-            if length == len(self.browser.page_source):
-                if count >= 3:
-                    break
-                count += 1
-            length = len(self.browser.page_source)
+        soup = BeautifulSoup(self.browser.page_source, 'html.parser')
+        bands = soup.select(".feature__content.media")
+        spil_plan = soup.select(".feature__artist-gig")
+        for i, band in enumerate(bands):
+            band_name = band.find("span", {"data-ng-bind": "artist.displayName"}).text.upper()
+            country = band.find("span", {"data-ng-bind": "countryList"})
+            self.bands[band_name]['country'] = country.text.upper()
+            #self.bands[band_name]['link'] = band
+            if not kategori_status: #hvis plakaten ikke er udgivet endnu
+                self.bands[band_name]['category'] = self.categories['common_names']['category']
+                self.bands[band_name]['category_length'] = self.categories['common_names']['playlength']
+            #band_spilleplan = spil_plan[i]
+            # blah, blah
 
     def extract_bands(self):
         """
@@ -193,7 +188,7 @@ class RfBandScraping:
                             By.CSS_SELECTOR, 'div.media__artist-gig')
                         try:
                             spans = play_info_div.find_elements(
-                                By.CSS_SELECTOR, 'article > header > div > div > span') #'span'
+                                By.CSS_SELECTOR, 'article > header > div > div > span')  # 'span'
                             play_info = spans[0].text
                             stage = play_info[play_info.rfind(" ") + 1:]
                             play_info = play_info[:play_info.rfind(" ") - 1]
@@ -225,10 +220,10 @@ class RfBandScraping:
             # Couldn't find the 'spans' in play_info_div
             print("Couldn't find info about which stage and time the band will play for theese bands:\n{}"
                   .format(play_info_faults, len(self.bands)))
-        #self.bands.pop("NONAME")
-        #self.bands.pop("NEUROSIS")
-        #pprint.pprint(self.bands)
-        #sys.exit()
+        # self.bands.pop("NONAME")
+        # self.bands.pop("NEUROSIS")
+        # pprint.pprint(self.bands)
+        # sys.exit()
 
     def detectYear(self):
         """ Get the working year at Roskilde Festival
@@ -239,14 +234,9 @@ class RfBandScraping:
         Returns:
             integer -- The working year
         """
-        year = 0
-        year_xpath = '//*[@id="ng-app"]/body/div[2]/nav/div[1]/header/a/figure/small'
         self.browser.get("http://www.roskilde-festival.dk")
-        try:
-            year = self.browser.find_element(By.XPATH, year_xpath)
-        except Exception as e:
-            print("detectYear - Something went wrong")
-        return year.text
+        soup = BeautifulSoup(self.browser.page_source, 'html.parser')
+        return soup.find("figure", class_="logo").text.strip()
 
     def get_spilleplan(self):
         pass
@@ -257,16 +247,17 @@ class RfBandScraping:
             "http://www.roskilde-festival.dk/music/" + str(self.current_year))
         sleep(2)
         poster_link = None
+        
         try:
             #print("Try to find the link to the poster")
-            poster_link = self.browser.find_element(
-                By.XPATH, self.page_info['bands_as_poster_xpath'])
+            poster_link = self.browser.find_element(By.XPATH, self.page_info['bands_as_poster_xpath'])
             poster_link.click()
         except:
             print("Couldn't find the link to the poster")
+            return False
         #print("sover 2 sek")
         sleep(2)
-        # self.browser.save_screenshot('poster.png')
+        #self.browser.save_screenshot('poster.png')
 
         headliners_div = None
         big_names_div = None
@@ -346,8 +337,9 @@ class RfBandScraping:
             except Exception as e:
                 print("Couldn't find {} in small_names".format(band))
 
-        #self.bands.pop("NONAME")
-        #self.bands.pop("NEUROSIS")
+        return True
+        # self.bands.pop("NONAME")
+        # self.bands.pop("NEUROSIS")
 
         # pprint.pprint(self.bands)
         #print("Number of bands: {}".format(len(self.bands)))
@@ -401,7 +393,8 @@ class RfBandScraping:
                 else:
                     # if len(lst) == 1:
                     if tup[1] is not None and lst[i - 2][1] is not None:
-                        hours_between = (tup[1] - lst[i - 2][1]).seconds / 60 / 60
+                        hours_between = (
+                            tup[1] - lst[i - 2][1]).seconds / 60 / 60
                         if hours_between < 6.0:
                             if int(temp_dag) == -1:
                                 temp_dag = tup[1].strftime("%w")
@@ -466,6 +459,8 @@ class RfBandScraping:
 """
 domain socket: avoid script to run if it already running
 """
+
+
 def get_lock(process_name):
     # Without holding a reference to our socket somewhere it gets garbage
     # collected when the function exits
@@ -473,7 +468,7 @@ def get_lock(process_name):
 
     try:
         get_lock._lock_socket.bind('\0' + process_name)
-        print( 'I got the lock')
+        print('I got the lock')
     except socket.error:
         print('lock exists')
         sys.exit(1)
@@ -518,19 +513,20 @@ cols must be grouped under the correct table"""
     print("############### Roskilde band scraper - log {} ##############".
           format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
     rfbs = RfBandScraping(year)
-    d = DatabaseHelper(rfbs.current_year)
-    d.insert_update_categories(rfbs.categories)
+    #d = DatabaseHelper(rfbs.current_year)
+    #d.insert_update_categories(rfbs.categories)
 
-    rfbs.get_music_as_list()
-    rfbs.extract_bands()
-    #rfbs.spilletime_leg()
-    #sys.exit()
+    #rfbs.get_music_as_list()
+    rfbs.extract_bands2()
+    # rfbs.spilletime_leg()
+    # sys.exit()
 
     # rfbs.spilletime_leg()
-    rfbs.get_category()
+    #rfbs.get_category()
     print("-------------------- Result: ---------------------------")
-    d.insert_update_bands(rfbs.bands)
-    d.delete_bands(rfbs.bands)
+    pprint.pprint(rfbs.bands)
+    #d.insert_update_bands(rfbs.bands)
+    #d.delete_bands(rfbs.bands)
     print("--------------------------------------------------------\n\n")
     #res = d.fetch_current_bands()
     # pprint.pprint(res)
