@@ -46,7 +46,7 @@ class DatabaseHelper:
         sql_insert = []
         sql_update = []
         new_bands = []
-        cancel_bands = [] #bands which has been cancel but not anymore
+        cancel_bands_lst = [] #bands which has been cancel but not anymore
         i = 1
         for band, _ in tqdm(bands.items()):
             # print(i)
@@ -67,7 +67,7 @@ class DatabaseHelper:
                     sql_update.append(band)
                 if self.current_bands[band]['aflyst'] == 'aflyst':
                     print("Bandet '{}' er alligevel ikke aflyst".format(band))
-                    cancel_bands.append(band)
+                    cancel_bands.lst.append(band)
             else:
                 # .encode('utf-8')
                 sql_insert.append(
@@ -112,9 +112,9 @@ class DatabaseHelper:
         else:
             print("Intet band-info skulle opdateres")
 
-        if cancel_bands:
+        if cancel_bands_lst:
             sql = [(None if self.current_bands[band]['aflyst'] == 'aflyst'
-                    else 'aflyst', band, self.current_year) for band in cancel_bands]
+                    else 'aflyst', band, self.current_year) for band in cancel_bands_lst]
             try:
                 cursor = self.db.cursor()
                 cursor.executemany("""UPDATE band_spilleplan
