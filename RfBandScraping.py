@@ -150,6 +150,8 @@ class RfBandScraping:
             if not kategori_status: #hvis plakaten ikke er udgivet endnu
                 self.bands[band_name]['category'] = self.categories['common_names']['category']
                 self.bands[band_name]['category_length'] = self.categories['common_names']['playlength']
+            self.bands[band_name]['stage'] = None
+            self.bands[band_name]['time'] = None
             #band_spilleplan = spil_plan[i]
             # blah, blah
 
@@ -513,8 +515,8 @@ cols must be grouped under the correct table"""
     print("############### Roskilde band scraper - log {} ##############".
           format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
     rfbs = RfBandScraping(year)
-    #d = DatabaseHelper(rfbs.current_year)
-    #d.insert_update_categories(rfbs.categories)
+    d = DatabaseHelper(rfbs.current_year)
+    d.insert_update_categories(rfbs.categories)
 
     #rfbs.get_music_as_list()
     rfbs.extract_bands2()
@@ -525,8 +527,8 @@ cols must be grouped under the correct table"""
     #rfbs.get_category()
     print("-------------------- Result: ---------------------------")
     pprint.pprint(rfbs.bands)
-    #d.insert_update_bands(rfbs.bands)
-    #d.delete_bands(rfbs.bands)
+    d.insert_update_bands(rfbs.bands)
+    d.delete_bands(rfbs.bands)
     print("--------------------------------------------------------\n\n")
     #res = d.fetch_current_bands()
     # pprint.pprint(res)
