@@ -114,7 +114,7 @@ class DatabaseHelper:
 
         if cancel_bands_lst:
             sql = [(None if self.current_bands[band]['aflyst'] == 'aflyst'
-                    else 'aflyst', band, self.current_year) for band in cancel_bands_lst]
+                    else 'aflyst', self.current_year, band) for band in cancel_bands_lst]
             try:
                 cursor = self.db.cursor()
                 cursor.executemany("""UPDATE band_spilleplan
