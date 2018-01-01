@@ -1,0 +1,5 @@
+host = localhost
+user = root
+password = root
+db = webpages_roskilde
+port = 3306
