@@ -528,7 +528,7 @@ cols must be grouped under the correct table"""
     print("-------------------- Result: ---------------------------")
     pprint.pprint(rfbs.bands)
     d.insert_update_bands(rfbs.bands)
-    d.delete_bands(rfbs.bands)
+    d.cancel_bands(rfbs.bands)
     print("--------------------------------------------------------\n\n")
     #res = d.fetch_current_bands()
     # pprint.pprint(res)
