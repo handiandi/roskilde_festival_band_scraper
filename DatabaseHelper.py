@@ -67,7 +67,7 @@ class DatabaseHelper:
                     sql_update.append(band)
                 if self.current_bands[band]['aflyst'] == 'aflyst':
                     print("Bandet '{}' er alligevel ikke aflyst".format(band))
-                    cancel_bands.lst.append(band)
+                    cancel_bands_lst.append(band)
             else:
                 # .encode('utf-8')
                 sql_insert.append(
