@@ -8,7 +8,8 @@ And in some time I will write some documentation at how to use it.
 1. Clone/download the files from the repository
 2. Download and install PhantomJS version **2.1.1** (or higher) by following [this guide](phantomjs_guide.md).
 3. Install Pipy packages: `pip3 install -r requirements.txt`
-4. Done! :)
+4. Update `db_info.txt` with the right credentials
+5. Done! :)
 
 
 ## Quick-guide for use: 
