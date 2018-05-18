@@ -29,9 +29,10 @@ If you want to scrape old years, you have to give the year explicit, like this:
 ## Dependencies
 ### Pipy packages 
 - Selenium
+- BeautifulSoup4
 - tqdm
 - dateutil
-- pymysql
+- PyMySQL
 
 ### Other tools/dependencies
 - PhantomJS>=2.1.1

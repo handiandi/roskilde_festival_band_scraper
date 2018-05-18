@@ -36,15 +36,17 @@ class DatabaseHelper:
         for row in rows:
             result[row[1]]['time'] = row[2]
             result[row[1]]['stage'] = row[3]
-            result[row[1]]['category'] = row[4]
+            result[row[1]]['aflyst'] = row[4]
+            result[row[1]]['category'] = row[5]
 
         return result
 
     def insert_update_bands(self, bands):
-        #print("insert_update_bands")
+        # print("insert_update_bands")
         sql_insert = []
         sql_update = []
         new_bands = []
+        cancel_bands_lst = [] #bands which has been cancel but not anymore
         i = 1
         for band, _ in tqdm(bands.items()):
             # print(i)
@@ -55,15 +57,21 @@ class DatabaseHelper:
             if band in self.current_bands:
                 #print("{} skal opdateres?".format(band))
                 if self.current_bands[band]['category'] != cat:
-                    print("categoryen for {} skal opdateres".format(band))
+                    print("Kategorien for {} skal opdateres".format(band))
+                    sql_update.append(band)
                 if self.current_bands[band]['time'] != spilletime:
                     print("spilletime for {} skal opdateres".format(band))
-                if self.current_bands[band]['stage'] != spilletime:
+                    sql_update.append(band)
+                if self.current_bands[band]['stage'] != stage:
                     print("stage for {} skal opdateres".format(band))
+                    sql_update.append(band)
+                if self.current_bands[band]['aflyst'] == 'aflyst':
+                    print("Bandet '{}' er alligevel ikke aflyst".format(band))
+                    cancel_bands_lst.append(band)
             else:
                 # .encode('utf-8')
                 sql_insert.append(
-                    (self.current_year, band, spilletime, stage, cat))
+                    (self.current_year, band, spilletime, stage, None, cat))
                 new_bands.append(band)
             i += 1
         if sql_insert:
@@ -72,7 +80,7 @@ class DatabaseHelper:
             cursor = self.db.cursor()
             try:
                 cursor.executemany(
-                    "INSERT INTO band_spilleplan VALUES(%s, %s, %s, %s, %s);",
+                    "INSERT INTO band_spilleplan VALUES(%s, %s, %s, %s, %s, %s);",
                     sql_insert)
                 self.db.commit()
                 print("Bandsne blev gemt!")
@@ -82,24 +90,60 @@ class DatabaseHelper:
         else:
             print("Ingen nye bands!")
 
-    def delete_bands(self, bands):
+        if sql_update:
+            sql_update2 = []
+            sql_update = list(set(sql_update))
+            print("Der skal opdateres info for {} bands".
+                  format(len(sql_update)))
+            sql_update2 = [(bands[band]['time'], bands[band]['stage'],
+                            bands[band]['category'], self.current_year, band)
+                           for band in sql_update]
+            try:
+                cursor = self.db.cursor()
+                cursor.executemany("""UPDATE band_spilleplan
+                                      SET spille_tid=%s, scene=%s, \
+                                      kategori=%s
+                                      WHERE aar=%s AND band_navn=%s;""",
+                                   sql_update2)
+                self.db.commit()
+                print("Bands-info blev opdateret")
+            except Exception as e:
+                print("Kunne ikke opdatere band-info: {}".format(str(e)))
+        else:
+            print("Intet band-info skulle opdateres")
+
+        if cancel_bands_lst:
+            sql = [(None if self.current_bands[band]['aflyst'] == 'aflyst'
+                    else 'aflyst', self.current_year, band) for band in cancel_bands_lst]
+            try:
+                cursor = self.db.cursor()
+                cursor.executemany("""UPDATE band_spilleplan
+                                      SET aflyst=%s
+                                      WHERE aar=%s AND band_navn=%s;""",
+                                   sql)
+                self.db.commit()
+                print("Bands-info blev opdateret")
+            except Exception as e:
+                print("Kunne ikke opdatere band-info: {}".format(str(e)))
+
+    def cancel_bands(self, bands):
         cursor = self.db.cursor()
         deletable_bands = list(
             set(self.current_bands.keys()) - set(bands.keys()))
         if deletable_bands:
-            print("Disse {} bands skal slettes: {}".
+            print("Disse {} bands er blevet aflyst: {}".
                   format(len(deletable_bands),
                          deletable_bands))
-            query_data = [(band, self.current_year) for band
+            query_data = [("aflyst", band, self.current_year) for band
                           in deletable_bands]
             try:
                 cursor.executemany(
-                    "DELETE FROM band_spilleplan WHERE band_navn=%s AND aar=%s;",
+                    "UPDATE band_spilleplan SET aflyst=%s WHERE band_navn=%s AND aar=%s;",
                     query_data)
                 self.db.commit()
-                print("Bandsne blev slettet")
+                print("Bands-info er blevet opdateret med aflyst")
             except Exception as e:
-                print("Der opstod en fejl ved sletning af bands: {}".
+                print("Der opstod en fejl ved aflysning af bands: {}".
                       format(str(e)))
         else:
             print("Ingen bands der skulle slettes")
