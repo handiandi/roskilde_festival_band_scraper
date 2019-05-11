@@ -1,3 +1,4 @@
+# -*- coding: utf8 -*-  
 import pymysql.cursors
 from collections import defaultdict
 from tqdm import tqdm

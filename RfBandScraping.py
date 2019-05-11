@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+# -*- coding: utf8 -*-  
 import sys
 # sys.setdefaultencoding('utf8')
 from time import sleep
@@ -28,6 +28,7 @@ import socket
 import dateparser
 
 class RfBandScraping:
+    root_url = "https://www.roskilde-festival.dk/en/line-up/"
 
     """docstring for PeopleUpdater"""
 
@@ -113,7 +114,7 @@ class RfBandScraping:
         kategori_status = self.get_category()
         print(kategori_status)
         self.browser.get(
-            "http://www.roskilde-festival.dk/music/" + str(self.current_year))
+            self.root_url + str(self.current_year))
 
         script = """document.querySelector(".filter label:nth-of-type(2)").click();
                     var elements = document.getElementsByClassName(\
@@ -241,7 +242,7 @@ class RfBandScraping:
     def get_category(self):
         print("get_category")
         self.browser.get(
-            "http://www.roskilde-festival.dk/music/" + str(self.current_year))
+            self.root_url + str(self.current_year))
 
         script = """document.querySelector(".filter label:nth-of-type(3)").click();
                     var elements = document.getElementsByClassName(\
@@ -489,7 +490,7 @@ cols must be grouped under the correct table"""
           format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
     rfbs = RfBandScraping(year)
     d = DatabaseHelper(rfbs.current_year)
-    d.insert_update_categories(rfbs.categories)
+    # d.insert_update_categories(rfbs.categories)
 
     #rfbs.get_music_as_list()
     rfbs.extract_bands2()
