@@ -1,0 +1,3 @@
+[submodule "py-scraper"]
+	path = py-scraper
+	url = git@github.com:theme1256/py-scrape-framework.git
