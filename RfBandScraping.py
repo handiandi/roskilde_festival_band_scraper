@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+# -*- coding: utf8 -*-  
 import sys
 # sys.setdefaultencoding('utf8')
 from time import sleep
@@ -24,10 +24,11 @@ from argparse import RawTextHelpFormatter
 from DatabaseHelper import DatabaseHelper
 
 import socket
-import sys
-
+# import sys
+import dateparser
 
 class RfBandScraping:
+    root_url = "https://www.roskilde-festival.dk/en/line-up/"
 
     """docstring for PeopleUpdater"""
 
@@ -80,6 +81,7 @@ class RfBandScraping:
         self.categories['small_names']['category'] = 4
         self.categories['small_names']['playlength'] = 1.0
         self.categories['small_names']['db_navn'] = "Lille navn"
+        self.cats = ["", "headliners", "big_names", "common_names", "small_names"]
 
     def init_driver(self):
         dcap = dict(DesiredCapabilities.PHANTOMJS)
@@ -95,32 +97,13 @@ class RfBandScraping:
         driver.execute_script('document.body.style.background = "white"')
         return driver
 
-    # def get_music_as_list(self):
-    #     try:
-    #         band_list = self.browser.find_element(
-    #             By.XPATH, selector)
-    #     except Exception as e:
-    #         print("Could find the list with bands: {0}".format(e))
-
-    #     # sys.exit()
-        
-    #     if band_list is not None:
-    #         try:
-    #             self.band_list = band_list.find_elements(By.TAG_NAME, 'li')
-    #             print("Band li tags found")
-    #         except Exception:
-    #             print("Couldn't find band li tags")
-    #     self.band_list = [elem for i, elem in enumerate(self.band_list)
-    #                       if i % 6 == 0]
-    #     print(len(self.band_list))
-
     def scroll_page_to_bottom(self, script):
         count = 0
         length = len(self.browser.page_source)
         while True:
             self.browser.execute_script(script)
             print("Scrolling page...")
-            sleep(1)
+            sleep(.5)
             if length == len(self.browser.page_source):
                 if count >= 3:
                     break
@@ -131,27 +114,40 @@ class RfBandScraping:
         kategori_status = self.get_category()
         print(kategori_status)
         self.browser.get(
-            "http://www.roskilde-festival.dk/music/" + str(self.current_year))
+            self.root_url + str(self.current_year))
 
-        script = """var elements = document.getElementsByClassName(\
+        script = """document.querySelector(".filter label:nth-of-type(2)").click();
+                    var elements = document.getElementsByClassName(\
                     'app__scroller app__scroller--artists ng-scope');
                     var element = elements[0];
                     element.scrollTop = element.scrollHeight;"""
 
         self.scroll_page_to_bottom(script)
         soup = BeautifulSoup(self.browser.page_source, 'html.parser')
-        bands = soup.select(".feature__content.media")
-        spil_plan = soup.select(".feature__artist-gig")
+        # bands = soup.select(".feature__content.media")
+        bands = soup.select("li.media-list__item")
+        # spil_plan = soup.select(".feature__artist-gig")
         for i, band in enumerate(bands):
             band_name = band.find("span", {"data-ng-bind": "artist.displayName"}).text.upper()
             country = band.find("span", {"data-ng-bind": "countryList"})
+            time = band.select("span:nth-of-type(5)")
+            if(len(time) > 0):
+                time = dateparser.parse(str(time[0]).split("YYYY'\">")[1].split(",</span>")[0])
+            else:
+                time = None
+            stage = band.select("span:nth-of-type(6)")
+            print(stage)
+            if(len(stage) > 0):
+                stage = str(stage[0]).split("\">")[1].split("</span>")[0]
+            else:
+                stage = None
             self.bands[band_name]['country'] = country.text.upper()
             #self.bands[band_name]['link'] = band
             if not kategori_status: #hvis plakaten ikke er udgivet endnu
                 self.bands[band_name]['category'] = self.categories['common_names']['category']
                 self.bands[band_name]['category_length'] = self.categories['common_names']['playlength']
-            self.bands[band_name]['stage'] = None
-            self.bands[band_name]['time'] = None
+            self.bands[band_name]['stage'] = stage
+            self.bands[band_name]['time'] = time
             #band_spilleplan = spil_plan[i]
             # blah, blah
 
@@ -246,50 +242,28 @@ class RfBandScraping:
     def get_category(self):
         print("get_category")
         self.browser.get(
-            "http://www.roskilde-festival.dk/music/" + str(self.current_year))
-        sleep(2)
-        poster_link = None
-        
-        try:
-            #print("Try to find the link to the poster")
-            poster_link = self.browser.find_element(By.XPATH, self.page_info['bands_as_poster_xpath'])
-            poster_link.click()
-        except:
-            print("Couldn't find the link to the poster")
-            return False
-        #print("sover 2 sek")
-        sleep(2)
-        #self.browser.save_screenshot('poster.png')
+            self.root_url + str(self.current_year))
 
-        headliners_div = None
-        big_names_div = None
-        common_names_div = None
-        small_names_div = None
-        sleep(2)
-        #print("Fetching divs...")
-        try:
-            headliners_div = self.browser.find_element(
-                By.XPATH, self.page_info['poster_headliners_xpath'])
-            big_names_div = self.browser.find_element(
-                By.XPATH, self.page_info['poster_bignames_xpath'])
-            common_names_div = self.browser.find_element(
-                By.XPATH, self.page_info['poster_common_names_xpath'])
-            small_names_div = self.browser.find_element(
-                By.XPATH, self.page_info['poster_small_names_xpath'])
-        except Exception:
-            print("Kunne ikke finde plakat divs")
+        script = """document.querySelector(".filter label:nth-of-type(3)").click();
+                    var elements = document.getElementsByClassName(\
+                    'app__scroller app__scroller--artists ng-scope');
+                    var element = elements[0];
+                    element.scrollTop = element.scrollHeight;"""
 
-        headliners = None
-        big_names = None
-        common_names = None
-        small_names = None
-        try:
-            headliners = headliners_div.find_elements(By.TAG_NAME, 'li')
-            big_names = big_names_div.find_elements(By.TAG_NAME, 'li')
-            common_names = common_names_div.find_elements(By.TAG_NAME, 'li')
-            small_names = small_names_div.find_elements(By.TAG_NAME, 'li')
-        except Exception as e:
-            raise
+        self.scroll_page_to_bottom(script)
+        soup = BeautifulSoup(self.browser.page_source, 'html.parser')
+        bands = soup.select("div.poster-list")
+        # print(bands)
+
+        listen = str(bands).split("<span>poster</span>")[1].split("<!-- end ngIf: artist.showInBandList --><!-- end ngRepeat: artist in value | orderBy:'sortingName' --><!-- ngIf: artist.showInBandList -->")
+        print("Found {} bands on the poster".format(len(listen)))
+        for band in listen:
+            tmp = str(band)
+            name = tmp.split('data-ng-bind="artist.displayName">')[1].split("</em>")[0]
+            category = tmp.split('class="priority-')[1].split("\" data-ng-if=")[0]
+            self.bands[name]['category'] = category
+            self.bands[name]['category_length'] = self.categories[self.cats[int(category)]]['playlength']
+        return True
 
         #print("Fetching headliners...")
         for band in tqdm(headliners):
@@ -516,7 +490,7 @@ cols must be grouped under the correct table"""
           format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
     rfbs = RfBandScraping(year)
     d = DatabaseHelper(rfbs.current_year)
-    d.insert_update_categories(rfbs.categories)
+    # d.insert_update_categories(rfbs.categories)
 
     #rfbs.get_music_as_list()
     rfbs.extract_bands2()
